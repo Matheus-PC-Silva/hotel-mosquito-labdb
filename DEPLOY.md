@@ -2,9 +2,33 @@
 
 Este documento guia qualquer pessoa do grupo a colocar o projeto funcionando do zero em sua máquina, do banco de dados até a interface gráfica.
 
-Escolha **uma** das duas opções de banco de dados:
-- **Opção Docker** (recomendada — sem instalação de MySQL) → vá direto para a [seção Docker](#-opção-docker-recomendada)
-- **Opção MySQL local** (MySQL Workbench instalado) → siga os passos 1–4 abaixo
+Escolha **uma** das opções abaixo:
+
+| Situação | Opção |
+|---|---|
+| Tem PC com Docker | [Opção Docker](#-opção-docker-recomendada) ← recomendada |
+| Tem PC com MySQL Workbench | [Opção MySQL local](#opção-mysql-local) |
+| **Sem PC — só celular** | [Google Colab ↓](#-sem-pc-google-colab) |
+
+---
+
+## 📱 Sem PC — Google Colab
+
+Abre o sistema completo no navegador via noVNC. Funciona em qualquer celular.
+
+**1.** Abra o notebook diretamente:
+
+```
+https://colab.research.google.com/github/Matheus-PC-Silva/hotel-mosquito-labdb/blob/main/colab_hotel_mosquito.ipynb
+```
+
+**2.** Execute as células em ordem (▶ em cada uma). A Célula 1 demora ~2 minutos.
+
+**3.** A Célula 3 exibe um link — abra-o no navegador. A janela do sistema aparecerá.
+
+**4.** Use as [credenciais de teste](#8-credenciais-de-teste) para entrar.
+
+> ⚠️ O link de acesso muda a cada vez que o Colab é reiniciado. Execute a Célula 3 novamente para gerar um novo.
 
 ---
 

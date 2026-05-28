@@ -4,42 +4,36 @@ Trabalho prático da disciplina Laboratório de Banco de Dados. Sistema CRUD em
 MySQL + Python/Tkinter com comunicação 100% encapsulada em stored procedures e
 views.
 
-## Pré-requisitos
+## Deploy rápido
 
-- MySQL 8+ e MySQL Workbench
-- Python 3.10+ (com Tkinter — vem no instalador padrão do Windows)
-- Acesso administrativo ao MySQL local (para criar database)
+Escolha a opção que se aplica à sua situação:
 
-## Passo 1 — Executar o script SQL
+| Situação | Opção |
+|---|---|
+| Tem PC com Docker instalado | [Opção Docker](DEPLOY.md#-opção-docker-recomendada) ← recomendada |
+| Tem PC com MySQL instalado | [Opção MySQL local](DEPLOY.md#opção-mysql-local) |
+| **Sem PC — só celular** | [Rodar no Google Colab ↓](#-sem-pc-rodar-no-google-colab) |
 
-1. Abra o MySQL Workbench e conecte ao servidor local.
-2. Abra o arquivo `sql/hotel_mosquito_full.sql`.
-3. Execute todo o script (Ctrl+Shift+Enter).
-4. Verifique a saída final — deve aparecer a linha de contagem com
-   `5, 15, 10, 5, 10, 10, 8, 15, 15`.
+---
 
-> **Nota:** o script faz `DROP DATABASE IF EXISTS hotel_mosquito` no início — se você
-> já tem dados nesse schema, eles serão apagados.
+## 🚀 Sem PC — Rodar no Google Colab
 
-## Passo 2 — (Opcional) Demo de transações puras
+O notebook abre o sistema completo no navegador via noVNC. Funciona em **qualquer celular** com Chrome ou Firefox.
 
-Execute `sql/99_demo_transacoes.sql` bloco a bloco no Workbench para ver os
-cenários de COMMIT, ROLLBACK e SAVEPOINT em ação.
+### Passo a passo (3 cliques)
 
-## Passo 3 — Configurar e rodar a aplicação
+**1.** Abra o notebook no Colab:
 
-1. Edite `app/config.ini` com seu host/usuário/senha do MySQL.
-2. Instale dependências:
+[![Abrir no Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Matheus-PC-Silva/hotel-mosquito-labdb/blob/main/colab_hotel_mosquito.ipynb)
 
-```powershell
-pip install -r app\requirements.txt
-```
+> Link direto: `https://colab.research.google.com/github/Matheus-PC-Silva/hotel-mosquito-labdb/blob/main/colab_hotel_mosquito.ipynb`
 
-3. Rode (a partir da raiz do projeto):
+**2.** Execute as células em ordem clicando em ▶ em cada uma.
+A **Célula 1** demora ~2 minutos (instala MySQL e configura o ambiente).
 
-```powershell
-python -m app.main
-```
+**3.** A **Célula 3** exibirá um link. Abra esse link no navegador — a janela do sistema aparecerá. Use as credenciais abaixo para entrar.
+
+---
 
 ## Credenciais de teste
 
@@ -51,30 +45,34 @@ python -m app.main
 | recep2   | senha123 | Recepcionista |
 | recep3   | senha123 | Recepcionista |
 
+---
+
 ## Estrutura do projeto
 
-- `sql/` — scripts SQL (schema, views, procedures, triggers, seed, full, demo)
-- `app/` — aplicação Python
-  - `db/` — camada de acesso (uma função por procedure)
-  - `ui/` — janelas e abas Tkinter
-- `docs/` — relatório técnico, apresentação, diagramas
-
-## Diagramas MER e Modelo Lógico
-
-Os diagramas são gerados a partir do banco já carregado via
-**Workbench → Database → Reverse Engineer**. Exporte como PNG e salve em
-`docs/mer.png` e `docs/modelo_logico.png`.
-
-## Segurança
-
-O usuário MySQL usado pela aplicação deve ter apenas EXECUTE em procedures e
-SELECT em views. Exemplo de grant mínimo:
-
-```sql
-CREATE USER 'hotel_app'@'localhost' IDENTIFIED BY 'senha_app';
-GRANT EXECUTE ON hotel_mosquito.* TO 'hotel_app'@'localhost';
-GRANT SELECT ON hotel_mosquito.vw_quartos_disponiveis TO 'hotel_app'@'localhost';
-GRANT SELECT ON hotel_mosquito.vw_ocupacao_atual TO 'hotel_app'@'localhost';
-GRANT SELECT ON hotel_mosquito.vw_historico_reservas_cliente TO 'hotel_app'@'localhost';
-FLUSH PRIVILEGES;
 ```
+hotel-mosquito-labdb/
+├── sql/                        ← scripts SQL
+│   ├── hotel_mosquito_full.sql ← script único (use este para deploy)
+│   ├── 01_schema.sql
+│   ├── 02_views.sql
+│   ├── 03_procedures.sql
+│   ├── 04_triggers.sql
+│   ├── 05_seed_data.sql
+│   └── 99_demo_transacoes.sql
+├── app/                        ← aplicação Python/Tkinter
+│   ├── main.py
+│   ├── config.ini
+│   ├── db/                     ← uma função por procedure
+│   └── ui/                     ← abas Tkinter
+├── docs/
+│   ├── relatorio_tecnico.md
+│   ├── apresentacao_db.html
+│   ├── mer.png / mer.dbml
+│   └── BANCO_DE_DADOS.md
+├── colab_hotel_mosquito.ipynb  ← notebook para rodar no Colab
+├── docker-compose.yml
+├── DEPLOY.md                   ← guia completo de deploy
+└── README.md
+```
+
+Para o guia completo de deploy com Docker ou MySQL local, veja [DEPLOY.md](DEPLOY.md).
