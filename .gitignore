@@ -1,0 +1,31 @@
+# Ambiente virtual Python
+.venv/
+venv/
+env/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Arquivos de planejamento gerados por IA
+docs/superpowers/
+
+# Configuração local (opcional — remova esta linha se quiser versionar o config.ini)
+# app/config.ini
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.user
