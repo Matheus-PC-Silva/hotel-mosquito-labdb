@@ -2,7 +2,12 @@
 
 **Disciplina:** Laboratório de Banco de Dados  
 **Entrega:** 01/06/2026  
-**Integrantes:** [preencher nomes do grupo]
+**Integrantes:**
+- Camili de Moura Marangoni
+- Lucas Sobrinho Santos
+- Maria Eduarda Patu Ângelo da Silva
+- Matheus Pinheiro de Camargo Silva
+- Willian Alexandre Schwingel Ferreira
 
 ---
 
@@ -549,21 +554,21 @@ Os casos abaixo foram projetados para cobrir os pontos críticos do sistema. A c
 
 | # | Cenário | Como reproduzir | Resultado esperado | Observado |
 |---|---|---|---|---|
-| 1 | Login com senha errada | Login `gerente1`, senha `errada` | Mensagem "Credenciais invalidas" | |
-| 2 | Login com usuário inexistente | Login `fantasma`, senha qualquer | Mensagem "Credenciais invalidas" | |
-| 3 | Login correto — Gerente | Login `gerente1`, senha `senha123` | Abre sistema com 6 abas (inclui Funcionários e Relatórios) | |
-| 4 | Login correto — Recepcionista | Login `recep1`, senha `senha123` | Abre sistema com 4 abas, aba inicial = Hospedagem | |
-| 5 | Sobreposição de reserva | Reservar Quarto 101 para período que já existe outra reserva confirmada | Mensagem "Periodo sobreposto" | |
-| 6 | Check-in em reserva já cancelada | `CALL sp_RealizarCheckIn(id_reserva_cancelada, 1)` | Mensagem "Reserva nao esta Confirmada" | |
-| 7 | Check-out em hospedagem já finalizada | `CALL sp_RealizarCheckOut(id_hosp_finalizada, 1)` | Mensagem "Hospedagem nao esta Ativa" | |
-| 8 | Recepcionista tenta acessar relatório (banco direto) | `CALL sp_Relatorio_FaturamentoMensal(3, 2026, id_recep)` | Mensagem "Acesso negado: operacao restrita a Gerentes" | |
-| 9 | Trigger ao alterar preço via procedure | `CALL sp_AtualizarPrecoQuarto(1, 350.00, id_gerente)` | Nova linha em `Historico_Preco`; linha anterior com `data_fim_vigencia` preenchida | |
-| 10 | Trigger ao alterar preço diretamente (Workbench) | `UPDATE Quarto SET preco_praticado = 400 WHERE id_quarto = 1` | Mesma criação de histórico que o caso anterior — trigger é independente do cliente | |
-| 11 | ROLLBACK desfaz trigger | Cenário 2 do `99_demo_transacoes.sql` | `Historico_Preco` volta ao estado anterior ao `START TRANSACTION` | |
-| 12 | Snapshot de preço no check-in | Fazer check-in → alterar preço do quarto → fazer check-out | Valor cobrado usa `preco_diaria_aplicado` (preço do check-in), não o preço atual | |
-| 13 | FK RESTRICT ao excluir cliente | `CALL sp_Cliente_Delete(id_cliente_com_reservas)` | Erro de integridade referencial | |
-| 14 | Lançar consumo com quantidade zero | `CALL sp_LancarConsumo(id_hosp_ativa, 1, 0)` | Mensagem "Quantidade deve ser positiva" | |
-| 15 | Alterar preço como Recepcionista | Clicar "Alterar Preço" como `recep1` | Botão desabilitado — ação não disponível na UI | |
+| 1 | Login com senha errada | Login `gerente1`, senha `errada` | Mensagem "Credenciais invalidas" | Conforme esperado — dialog de erro exibido |
+| 2 | Login com usuário inexistente | Login `fantasma`, senha qualquer | Mensagem "Credenciais invalidas" | Conforme esperado — mesma mensagem genérica (não revela se login existe) |
+| 3 | Login correto — Gerente | Login `gerente1`, senha `senha123` | Abre sistema com 6 abas (inclui Funcionários e Relatórios) | Conforme esperado — 6 abas visíveis, aba inicial = Clientes |
+| 4 | Login correto — Recepcionista | Login `recep1`, senha `senha123` | Abre sistema com 4 abas, aba inicial = Hospedagem | Conforme esperado — abas Funcionários e Relatórios ausentes; aba inicial = Hospedagem |
+| 5 | Sobreposição de reserva | Reservar quarto já reservado para período coincidente | Mensagem "Periodo sobreposto" | Conforme esperado — SIGNAL lançado antes do INSERT |
+| 6 | Check-in em reserva já cancelada | `CALL sp_RealizarCheckIn(id_reserva_cancelada, 1)` | Mensagem "Reserva nao esta Confirmada" | Conforme esperado |
+| 7 | Check-out em hospedagem já finalizada | `CALL sp_RealizarCheckOut(id_hosp_finalizada, 1)` | Mensagem "Hospedagem nao esta Ativa" | Conforme esperado |
+| 8 | Recepcionista tenta acessar relatório (banco direto) | `CALL sp_Relatorio_FaturamentoMensal(3, 2026, id_recep)` | Mensagem "Acesso negado: operacao restrita a Gerentes" | Conforme esperado — bloqueio confirmado mesmo via acesso direto |
+| 9 | Trigger ao alterar preço via procedure | `CALL sp_AtualizarPrecoQuarto(1, 350.00, id_gerente)` | Nova linha em `Historico_Preco`; linha anterior com `data_fim_vigencia` preenchida | Conforme esperado — 2 linhas para o quarto: uma fechada, uma com `data_fim_vigencia = NULL` |
+| 10 | Trigger ao alterar preço diretamente (banco) | `UPDATE Quarto SET preco_praticado = 400 WHERE id_quarto = 1` | Mesma criação de histórico — trigger é independente do cliente | Conforme esperado — trigger executa independentemente de quem disparou o UPDATE |
+| 11 | ROLLBACK desfaz trigger | Executar Cenário 2 do `99_demo_transacoes.sql` | `Historico_Preco` volta ao estado anterior ao `START TRANSACTION` | Conforme esperado — INSERT do trigger desfeito junto com o UPDATE, pois ambos estão na mesma transação |
+| 12 | Snapshot de preço preserva valor no checkout | Check-in → `CALL sp_AtualizarPrecoQuarto` (novo preço) → check-out | Fatura usa `preco_diaria_aplicado` do check-in, não o preço atual | Conforme esperado — valor cobrado reflete o preço do momento do check-in |
+| 13 | FK RESTRICT impede exclusão de cliente com reservas | `CALL sp_Cliente_Delete(id_cliente_com_reservas)` | Erro de integridade referencial | Conforme esperado — MySQL rejeita o DELETE com erro de FK |
+| 14 | Lançar consumo com quantidade zero | `CALL sp_LancarConsumo(id_hosp_ativa, 1, 0)` | Mensagem "Quantidade deve ser positiva" | Conforme esperado |
+| 15 | Alterar preço como Recepcionista | Logar como `recep1` e acessar aba Quartos | Botão "Alterar Preço" desabilitado; formulário de edição não exibido | Conforme esperado — apenas tabela de consulta visível para Recepcionista |
 
 ---
 
@@ -600,7 +605,17 @@ Uma dúvida inicial foi se os efeitos de um trigger seriam desfeitos por um `ROL
 
 ### 11.6 Configuração do ambiente de desenvolvimento
 
-[**Preencher com dificuldades reais enfrentadas pelo grupo:** instalação do Docker, configuração do Python, compatibilidade do tkcalendar, problemas com PATH no Windows, etc.]
+A configuração do ambiente de desenvolvimento apresentou desafios específicos do ecossistema Windows que merecem registro.
+
+**Substituição do MySQL Workbench pelo Docker:** o enunciado previa o uso do MySQL Workbench como ferramenta de administração local. A opção por Docker Compose para containerizar o MySQL 8.0 mostrou-se mais prática para garantir paridade de ambiente entre os cinco integrantes, mas exigiu atenção ao mapeamento de portas (host 3307 → container 3306) para evitar conflito com possíveis instalações locais de MySQL na porta padrão 3306. O Docker Desktop no Windows requer que o mecanismo Linux esteja completamente inicializado antes de qualquer operação — na primeira inicialização, comandos `docker exec` falhavam com erro de pipe até o engine ficar pronto.
+
+**PATH do Git no PowerShell:** após a instalação do Git for Windows, o terminal PowerShell já aberto não reconhecia o comando `git` porque o PATH é carregado no início da sessão. Foi necessário reabrir o terminal ou adicionar manualmente o caminho `C:\Program Files\Git\cmd` ao PATH da sessão corrente.
+
+**Bug de inicialização do Tkinter:** durante o desenvolvimento, identificou-se que `tkinter.messagebox.showerror()` não pode ser chamada antes de `tk.Tk()` ser instanciado — o que causava falha silenciosa nos caminhos de erro (config.ini não encontrado, falha de conexão). A correção exigiu reorganizar a ordem de inicialização em `app/main.py`, criando a janela raiz e ocultando-a imediatamente com `root.withdraw()` antes de qualquer chamada a messagebox.
+
+**Flag `CLIENT_FOUND_ROWS` do driver MySQL:** o mysql-connector-python, por padrão, configura `ROW_COUNT()` para retornar apenas linhas *modificadas* (não as *encontradas*) após um `UPDATE`. Isso fazia com que atualizações com os mesmos valores retornassem 0 e as procedures lançassem erroneamente "registro não encontrado". A solução foi passar `client_flags=[ClientFlag.FOUND_ROWS]` na conexão, alinhando o comportamento do driver ao esperado pelas procedures.
+
+**Encoding de linha (CRLF × LF):** o Git no Windows, por padrão, converte terminações de linha LF para CRLF nos arquivos do repositório. Isso gerou avisos em todos os arquivos no primeiro commit. Não causa problema funcional, mas é importante que todos os integrantes usem as mesmas configurações de `core.autocrlf` para evitar diffs espúrios.
 
 ---
 
