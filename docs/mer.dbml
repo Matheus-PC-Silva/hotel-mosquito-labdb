@@ -1,0 +1,113 @@
+// Hotel do Mosquito — Diagrama MER
+// Para visualizar: acesse https://dbdiagram.io/d → cole este conteúdo
+// Exporta para PNG/PDF pelo botão "Export" no canto superior direito
+
+Table Categoria_Quarto {
+  id_categoria int [pk, increment, note: 'PK']
+  nome         varchar(30) [not null, unique, note: 'Ex: Standard, Luxo, Suite']
+
+  indexes {
+    nome [unique]
+  }
+}
+
+Table Quarto {
+  id_quarto       int             [pk, increment]
+  numero          varchar(10)     [not null, unique]
+  andar           tinyint         [not null]
+  capacidade      tinyint         [not null, note: 'CHECK > 0']
+  status          varchar(20)     [not null, default: 'Disponivel', note: "ENUM: Disponivel | Ocupado | Limpeza | Manutencao"]
+  preco_praticado decimal(10,2)   [not null, note: 'CHECK >= 0 — observado pelo trigger']
+  id_categoria    int             [not null, ref: > Categoria_Quarto.id_categoria]
+
+  indexes {
+    numero [unique]
+    (id_categoria)
+  }
+}
+
+Table Historico_Preco {
+  id_historico         int          [pk, increment]
+  id_quarto            int          [not null, ref: > Quarto.id_quarto]
+  preco_praticado      decimal(10,2) [not null]
+  data_inicio_vigencia datetime     [not null]
+  data_fim_vigencia    datetime     [note: 'NULL = vigência em aberto (preço atual)']
+
+  indexes {
+    (id_quarto, data_fim_vigencia)
+  }
+}
+
+Table Cliente {
+  id_cliente     int          [pk, increment]
+  nome           varchar(100) [not null]
+  cpf            char(11)     [not null, unique, note: 'Somente dígitos; validado por CHECK REGEXP']
+  email          varchar(100) [unique]
+  telefone       varchar(20)
+  endereco       varchar(200)
+  data_cadastro  datetime     [not null, default: 'CURRENT_TIMESTAMP']
+
+  indexes {
+    cpf   [unique]
+    email [unique]
+  }
+}
+
+Table Funcionario {
+  id_funcionario int          [pk, increment]
+  nome           varchar(100) [not null]
+  login          varchar(40)  [not null, unique]
+  senha_hash     char(64)     [not null, note: 'SHA2(senha, 256) — nunca texto puro']
+  perfil         varchar(20)  [not null, note: "ENUM: Recepcionista | Gerente"]
+  data_cadastro  datetime     [not null, default: 'CURRENT_TIMESTAMP']
+
+  indexes {
+    login [unique]
+  }
+}
+
+Table Reserva {
+  id_reserva         int      [pk, increment]
+  id_cliente         int      [not null, ref: > Cliente.id_cliente]
+  id_quarto          int      [not null, ref: > Quarto.id_quarto]
+  id_funcionario     int      [not null, ref: > Funcionario.id_funcionario]
+  data_checkin_prev  date     [not null]
+  data_checkout_prev date     [not null, note: 'CHECK > data_checkin_prev']
+  status             varchar(20) [not null, default: 'Confirmada', note: "ENUM: Confirmada | Cancelada | Efetivada | NoShow"]
+  data_criacao       datetime [not null, default: 'CURRENT_TIMESTAMP']
+
+  indexes {
+    (id_quarto, data_checkin_prev, data_checkout_prev) [note: 'Detecção de sobreposição em sp_RegistrarReserva']
+    (id_cliente, status)
+  }
+}
+
+Table Hospedagem {
+  id_hospedagem         int          [pk, increment]
+  id_reserva            int          [not null, unique, ref: - Reserva.id_reserva, note: 'Relação 1:1 com Reserva']
+  data_checkin_real     datetime     [not null]
+  data_checkout_real    datetime     [note: 'NULL enquanto Ativa']
+  preco_diaria_aplicado decimal(10,2) [not null, note: 'Snapshot do preço no check-in — imutável']
+  valor_total_diarias   decimal(10,2) [note: 'Preenchido no check-out']
+  status                varchar(20)  [not null, default: 'Ativa', note: "ENUM: Ativa | Finalizada"]
+}
+
+Table Produto_Servico {
+  id_produto_servico int          [pk, increment]
+  nome               varchar(100) [not null, unique]
+  preco_praticado    decimal(10,2) [not null, note: 'CHECK >= 0']
+  tipo               varchar(20)  [not null, note: "ENUM: Frigobar | Restaurante | Lavanderia | Outro"]
+}
+
+Table Consumo {
+  id_consumo             int          [pk, increment]
+  id_hospedagem          int          [not null, ref: > Hospedagem.id_hospedagem, note: 'ON DELETE CASCADE']
+  id_produto_servico     int          [not null, ref: > Produto_Servico.id_produto_servico]
+  quantidade             int          [not null, note: 'CHECK > 0']
+  preco_unitario_momento decimal(10,2) [not null, note: 'Snapshot do preço no lançamento — imutável']
+  data_lancamento        datetime     [not null, default: 'CURRENT_TIMESTAMP']
+
+  indexes {
+    (id_hospedagem) [note: 'Soma de consumos no checkout']
+  }
+}
