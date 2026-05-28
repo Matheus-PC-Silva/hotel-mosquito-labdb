@@ -12,7 +12,7 @@ Escolha a opção que se aplica à sua situação:
 |---|---|
 | Tem PC com Docker instalado | [Opção Docker](DEPLOY.md#-opção-docker-recomendada) ← recomendada |
 | Tem PC com MySQL instalado | [Opção MySQL local](DEPLOY.md#opção-mysql-local) |
-| **Sem PC — só celular** | [Rodar no Google Colab ↓](#-sem-pc-rodar-no-google-colab) |
+| **Sem PC — só celular** | [![Abrir no Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Matheus-PC-Silva/hotel-mosquito-labdb/blob/main/colab_hotel_mosquito.ipynb) |
 
 ---
 
