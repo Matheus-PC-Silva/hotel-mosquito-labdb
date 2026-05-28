@@ -1,6 +1,7 @@
 """Entry point da aplicacao Hotel do Mosquito."""
 from __future__ import annotations
 
+import sys
 import tkinter as tk
 from tkinter import messagebox
 
@@ -27,7 +28,11 @@ def main():
         root.destroy()
         return
 
-    root.state("zoomed")   # maximiza antes de exibir o login
+    # Maximiza a janela: "zoomed" é exclusivo do Windows; Linux usa -zoomed
+    if sys.platform == "win32":
+        root.state("zoomed")
+    else:
+        root.attributes("-zoomed", True)
     root.deiconify()
 
     user_info = LoginWindow(root, conn).run()
