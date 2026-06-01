@@ -92,13 +92,13 @@ SELECT
         h.data_checkin_real
       ) + 1) AS diarias_ocupadas,
   (SELECT COUNT(*) FROM Quarto) AS total_quartos,
-  DAY(LAST_DAY(h.data_checkin_real)) AS dias_no_mes,
+  DAY(LAST_DAY(MIN(h.data_checkin_real))) AS dias_no_mes,
   ROUND(
     SUM(DATEDIFF(
           COALESCE(h.data_checkout_real, LAST_DAY(h.data_checkin_real)),
           h.data_checkin_real
         ) + 1)
-    / ((SELECT COUNT(*) FROM Quarto) * DAY(LAST_DAY(h.data_checkin_real)))
+    / ((SELECT COUNT(*) FROM Quarto) * DAY(LAST_DAY(MIN(h.data_checkin_real))))
     * 100,
     2
   ) AS taxa_ocupacao_pct
@@ -150,26 +150,19 @@ ORDER BY qtd_reservas DESC;
 DROP VIEW IF EXISTS vw_faturamento_mensal;
 CREATE VIEW vw_faturamento_mensal AS
 SELECT
-  YEAR(h.data_checkout_real)  AS ano,
-  MONTH(h.data_checkout_real) AS mes,
-  COUNT(h.id_hospedagem)      AS qtd_checkouts,
-  COALESCE(SUM(h.valor_total_diarias), 0) AS total_diarias,
-  COALESCE((
-    SELECT SUM(co.quantidade * co.preco_unitario_momento)
-    FROM Consumo co
-    JOIN Hospedagem hh ON hh.id_hospedagem = co.id_hospedagem
-    WHERE hh.status = 'Finalizada'
-      AND YEAR(hh.data_checkout_real)  = YEAR(h.data_checkout_real)
-      AND MONTH(hh.data_checkout_real) = MONTH(h.data_checkout_real)
-  ), 0) AS total_consumos,
-  COALESCE(SUM(h.valor_total_diarias), 0) + COALESCE((
-    SELECT SUM(co.quantidade * co.preco_unitario_momento)
-    FROM Consumo co
-    JOIN Hospedagem hh ON hh.id_hospedagem = co.id_hospedagem
-    WHERE hh.status = 'Finalizada'
-      AND YEAR(hh.data_checkout_real)  = YEAR(h.data_checkout_real)
-      AND MONTH(hh.data_checkout_real) = MONTH(h.data_checkout_real)
-  ), 0) AS faturamento_total
+  YEAR(h.data_checkout_real)               AS ano,
+  MONTH(h.data_checkout_real)              AS mes,
+  COUNT(h.id_hospedagem)                   AS qtd_checkouts,
+  COALESCE(SUM(h.valor_total_diarias), 0)  AS total_diarias,
+  COALESCE(SUM(c.total_consumo_hosp), 0)   AS total_consumos,
+  COALESCE(SUM(h.valor_total_diarias), 0)
+    + COALESCE(SUM(c.total_consumo_hosp), 0) AS faturamento_total
 FROM Hospedagem h
+LEFT JOIN (
+  SELECT id_hospedagem,
+         SUM(quantidade * preco_unitario_momento) AS total_consumo_hosp
+  FROM Consumo
+  GROUP BY id_hospedagem
+) c ON c.id_hospedagem = h.id_hospedagem
 WHERE h.status = 'Finalizada' AND h.data_checkout_real IS NOT NULL
 GROUP BY YEAR(h.data_checkout_real), MONTH(h.data_checkout_real);
