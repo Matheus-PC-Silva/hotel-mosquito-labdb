@@ -49,9 +49,7 @@ A diretriz central do projeto é o **encapsulamento total**: toda interação co
 
 ### 2.1 Diagrama Entidade-Relacionamento (MER)
 
-> **[Inserir imagem do diagrama MER aqui]**  
-> O arquivo `docs/mer.dbml` contém o código-fonte do diagrama no formato DBML.  
-> Para gerar a imagem: acesse [dbdiagram.io](https://dbdiagram.io/d), cole o conteúdo do arquivo e exporte como PNG.
+![Diagrama MER — Hotel do Mosquito](mer.png)
 
 ### 2.2 Modelo Lógico Relacional
 
@@ -532,19 +530,63 @@ A interface foi desenvolvida com **Python 3 + Tkinter (ttk.Notebook)**, seguindo
 - Campos de data utilizam `DateEntry` (tkcalendar) com seletor de calendário visual.
 - A janela abre maximizada com a tela de login centralizada, tornando imediato para o usuário que é necessário autenticar-se.
 
-> **[Inserir capturas de tela do sistema aqui]**
->
-> Sugestão de capturas:
-> - Tela de login
-> - Login com credencial inválida (mensagem de erro)
-> - Tela principal como Gerente (todas as abas)
-> - Tela principal como Recepcionista (abas restritas ausentes)
-> - Aba Hospedagem — fluxo de check-in
-> - Aba Hospedagem — lançamento de consumo
-> - Modal de check-out com valor total
-> - Aba Quartos como Gerente (formulário completo)
-> - Aba Quartos como Recepcionista (somente tabela)
-> - Aba Relatórios — Faturamento Mensal
+**Figura 1 — Tela de login**
+
+![Tela de login](tela1.png)
+
+---
+
+**Figura 2 — Login com credencial inválida**
+
+![Login com credencial inválida](tela2.png)
+
+---
+
+**Figura 3 — Tela principal (perfil Gerente — 6 abas)**
+
+![Tela principal como Gerente](tela3.png)
+
+---
+
+**Figura 4 — Tela principal (perfil Recepcionista — 4 abas)**
+
+![Tela principal como Recepcionista](tela4.png)
+
+---
+
+**Figura 5 — Aba Hospedagem: reservas agendadas e check-in**
+
+![Aba Hospedagem — check-in](tela5.png)
+
+---
+
+**Figura 6 — Aba Hospedagem: lançamento de consumo**
+
+![Aba Hospedagem — consumo](tela6.png)
+
+---
+
+**Figura 7 — Modal de check-out com valor total**
+
+![Modal de check-out](tela7.png)
+
+---
+
+**Figura 8 — Aba Quartos (perfil Gerente — formulário completo)**
+
+![Aba Quartos como Gerente](tela8.png)
+
+---
+
+**Figura 9 — Aba Quartos (perfil Recepcionista — somente consulta)**
+
+![Aba Quartos como Recepcionista](tela9.png)
+
+---
+
+**Figura 10 — Aba Relatórios: Faturamento Mensal**
+
+![Aba Relatórios — Faturamento Mensal](tela10.png)
 
 ---
 
