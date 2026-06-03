@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotel do Mosquito — LABDB</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0d1117;
+    --surface:  #161b22;
+    --border:   #30363d;
+    --accent:   #58a6ff;
+    --accent2:  #3fb950;
+    --warn:     #f0883e;
+    --danger:   #f85149;
+    --text:     #e6edf3;
+    --muted:    #8b949e;
+    --code-bg:  #0d1117;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text);
+               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+  /* ── DECK ── */
+  .deck { width: 100%; height: 100vh; position: relative; overflow: hidden; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 48px 72px;
+    opacity: 0; transform: translateX(60px);
+    transition: opacity .35s ease, transform .35s ease;
+    pointer-events: none;
+  }
+  .slide.active  { opacity: 1; transform: translateX(0); pointer-events: all; }
+  .slide.leaving { opacity: 0; transform: translateX(-60px); }
+
+  /* ── LAYOUT HELPERS ── */
+  .slide.left { align-items: flex-start; }
+  .cols { display: grid; gap: 32px; width: 100%; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* ── TYPOGRAPHY ── */
+  .tag  { font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+          color: var(--accent); margin-bottom: 10px; }
+  h1   { font-size: 3rem;  font-weight: 700; line-height: 1.15; }
+  h2   { font-size: 2rem;  font-weight: 700; line-height: 1.2;  margin-bottom: 28px; }
+  h3   { font-size: 1.1rem; font-weight: 600; color: var(--accent); margin-bottom: 10px; }
+  p, li { font-size: 1rem; line-height: 1.7; color: var(--muted); }
+  li   { margin-left: 1.2em; }
+  strong { color: var(--text); }
+  .big  { font-size: 1.25rem; color: var(--text); }
+  .hero { font-size: 4.5rem; font-weight: 800; color: var(--accent); }
+  .sub  { font-size: 1.15rem; color: var(--muted); margin-top: 12px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 24px;
+  }
+  .card.accent { border-color: var(--accent); }
+  .card.green  { border-color: var(--accent2); }
+  .card.warn   { border-color: var(--warn); }
+  .card.danger { border-color: var(--danger); }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block; font-size: .72rem; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px; margin: 3px 3px 3px 0;
+  }
+  .badge.blue   { background: #1f3a5f; color: var(--accent); }
+  .badge.green  { background: #1a3329; color: var(--accent2); }
+  .badge.orange { background: #3d2206; color: var(--warn); }
+  .badge.red    { background: #3d1515; color: var(--danger); }
+
+  /* ── CODE ── */
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 18px 22px; font-size: .82rem;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+    line-height: 1.65; overflow-x: auto; width: 100%;
+  }
+  .kw  { color: #ff7b72; }   /* keywords */
+  .fn  { color: #d2a8ff; }   /* functions / proc names */
+  .str { color: #a5d6ff; }   /* strings */
+  .cmt { color: #484f58; font-style: italic; }
+  .num { color: #79c0ff; }   /* numbers */
+  .op  { color: #ff7b72; }   /* operators */
+
+  /* ── TABLE ── */
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th { text-align: left; padding: 8px 12px; color: var(--muted);
+       border-bottom: 1px solid var(--border); font-weight: 600; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--accent); font-family: monospace; font-size: .82rem; }
+
+  /* ── DIVIDER LINE ── */
+  .rule { width: 60px; height: 3px; background: var(--accent);
+          border-radius: 2px; margin: 16px 0 28px; }
+
+  /* ── PERSON CARDS ── */
+  .person { background: var(--surface); border: 1px solid var(--border);
+            border-radius: 10px; padding: 18px; }
+  .person .num-big { font-size: 2rem; font-weight: 800; color: var(--accent);
+                     margin-bottom: 6px; }
+  .person h3 { font-size: .9rem; margin-bottom: 8px; }
+  .person p  { font-size: .8rem; }
+
+  /* ── CONTROLS ── */
+  #controls {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 16px; z-index: 100;
+  }
+  #controls button {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 20px; border-radius: 6px;
+    font-size: .85rem; cursor: pointer; transition: border-color .2s;
+  }
+  #controls button:hover { border-color: var(--accent); }
+  #counter { font-size: .82rem; color: var(--muted); min-width: 60px; text-align: center; }
+
+  /* ── PROGRESS BAR ── */
+  #progress {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: var(--accent); transition: width .35s ease; z-index: 200;
+  }
+
+  /* ── SLIDE NUMBER ── */
+  #slide-num {
+    position: fixed; top: 18px; right: 24px;
+    font-size: .72rem; color: var(--muted); z-index: 100;
+  }
+
+  /* ── PRINT / PDF EXPORT ── */
+  @media print {
+    body { background: #0d1117; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .deck { height: auto; overflow: visible; }
+    .slide {
+      position: relative !important;
+      opacity: 1 !important;
+      transform: none !important;
+      pointer-events: auto !important;
+      width: 100%; height: 100vh;
+      page-break-after: always;
+      break-after: page;
+      display: flex !important;
+    }
+    #controls, #progress, #slide-num { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="slide-num"></div>
+
+<div class="deck" id="deck">
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 1 -->
+  <section class="slide active">
+    <div class="tag">Laboratório de Banco de Dados</div>
+    <h1>Hotel do Mosquito</h1>
+    <div class="rule"></div>
+    <p class="sub">Sistema de gestão hoteleira com encapsulamento total via<br>
+       Stored Procedures · Views · Triggers · Transactions</p>
+    <br><br>
+    <p style="color:var(--muted);font-size:.85rem;">MySQL 8 &nbsp;·&nbsp; Python 3 / Tkinter &nbsp;·&nbsp; Docker</p>
+    <br>
+    <p style="color:var(--muted);font-size:.78rem;line-height:1.8">
+      Camili de Moura Marangoni &nbsp;·&nbsp; Lucas Sobrinho Santos<br>
+      Maria Eduarda Patu Ângelo da Silva &nbsp;·&nbsp; Matheus Pinheiro de Camargo Silva<br>
+      Willian Alexandre Schwingel Ferreira
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 2 -->
+  <section class="slide left">
+    <div class="tag">Visão Geral</div>
+    <h2>Arquitetura do Sistema</h2>
+    <div class="cols cols-2">
+      <div>
+        <div class="card accent" style="margin-bottom:16px">
+          <h3>Camada de Aplicação</h3>
+          <p>Python 3 + Tkinter<br>
+             <strong>Regra:</strong> zero SQL cru enviado pela rede.<br>
+             Toda operação é <code style="color:var(--accent2)">cursor.callproc()</code> ou<br>
+             <code style="color:var(--accent2)">SELECT * FROM vw_*</code></p>
+        </div>
+        <div class="card" style="margin-bottom:16px">
+          <h3>Protocolo de Comunicação</h3>
+          <p>mysql-connector-python 8.4<br>
+             Flag <code style="color:var(--warn)">CLIENT_FOUND_ROWS</code> ativa<br>
+             Parâmetros sempre vinculados<br>
+             (prevenção de SQL Injection)</p>
+        </div>
+      </div>
+      <div>
+        <div class="card green">
+          <h3>Camada de Banco de Dados</h3>
+          <p style="margin-bottom:12px">MySQL 8 · InnoDB · utf8mb4</p>
+          <div>
+            <span class="badge blue">9 tabelas</span>
+            <span class="badge green">7 views</span>
+            <span class="badge orange">~26 procedures</span>
+            <span class="badge red">2 triggers</span>
+            <span class="badge blue">4 SPs transacionais</span>
+            <span class="badge green">2 transações puras</span>
+          </div>
+          <br>
+          <p>Usuário MySQL da app possui apenas<br>
+             <code style="color:var(--accent2)">EXECUTE</code> em procedures e
+             <code style="color:var(--accent2)">SELECT</code> em views</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 3 -->
+  <section class="slide left">
+    <div class="tag">Modelagem</div>
+    <h2>Modelo de Dados — 9 Tabelas (3FN)</h2>
+    <div class="cols cols-2">
+      <div>
+        <table>
+          <tr><th>Tabela</th><th>Propósito</th></tr>
+          <tr><td>Categoria_Quarto</td><td>Tipos de quarto (Standard, Luxo…)</td></tr>
+          <tr><td>Quarto</td><td>Inventário de quartos + preço atual</td></tr>
+          <tr><td>Historico_Preco</td><td>Linha do tempo de preços por quarto</td></tr>
+          <tr><td>Cliente</td><td>Cadastro de hóspedes</td></tr>
+          <tr><td>Funcionario</td><td>Usuários do sistema + senha em hash</td></tr>
+          <tr><td>Reserva</td><td>Agendamentos (Confirmada → Efetivada)</td></tr>
+          <tr><td>Hospedagem</td><td>Estadia ativa (check-in → check-out)</td></tr>
+          <tr><td>Produto_Servico</td><td>Catálogo (frigobar, lavanderia…)</td></tr>
+          <tr><td>Consumo</td><td>Itens consumidos por hospedagem</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <h3>Decisões de Normalização</h3>
+          <p><strong>3FN rigorosa</strong> — sem dependências transitivas.<br>
+             <code style="color:var(--warn)">preco_diaria_aplicado</code> em Hospedagem e<br>
+             <code style="color:var(--warn)">preco_unitario_momento</code> em Consumo são<br>
+             <em>snapshots</em> intencionais — não violam 3FN.</p>
+        </div>
+        <div class="card green">
+          <h3>Integridade Referencial</h3>
+          <p>Todas as FKs com <code style="color:var(--accent2)">ON DELETE RESTRICT</code><br>
+             exceto <code>Consumo → Hospedagem</code> (<code>CASCADE</code>).<br>
+             CHECK constraints em preços e datas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 4 -->
+  <section class="slide left">
+    <div class="tag">Princípio Central</div>
+    <h2>Encapsulamento Total</h2>
+    <div class="cols cols-2">
+      <div>
+        <div class="card danger" style="margin-bottom:16px">
+          <h3>❌ O que a aplicação NÃO faz</h3>
+          <pre><span class="cmt">-- NUNCA enviado pela rede</span>
+<span class="kw">INSERT INTO</span> Cliente (nome, cpf) <span class="kw">VALUES</span> (?, ?)
+<span class="kw">UPDATE</span> Quarto <span class="kw">SET</span> preco = ? <span class="kw">WHERE</span> id = ?
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> Funcionario <span class="kw">WHERE</span> login = ?</pre>
+        </div>
+        <div class="card accent">
+          <h3>✅ O que a aplicação FAZ</h3>
+          <pre><span class="cmt"># Python — única forma de acesso</span>
+<span class="fn">call_proc</span>(conn, <span class="str">"sp_Cliente_Create"</span>,
+          (nome, cpf, email, tel, end))
+
+<span class="fn">call_proc</span>(conn, <span class="str">"sp_AtualizarPrecoQuarto"</span>,
+          (id_quarto, novo_preco, id_executor))
+
+<span class="fn">query_view</span>(conn, <span class="str">"vw_quartos_disponiveis"</span>)</pre>
+        </div>
+      </div>
+      <div>
+        <div class="card green">
+          <h3>Por que isso importa?</h3>
+          <p style="margin-bottom:12px">
+            <strong>Toda regra de negócio vive no banco</strong> —
+            qualquer cliente (app, Workbench, script) que tente burlar
+            a aplicação ainda passa pelas mesmas validações.
+          </p>
+          <p style="margin-bottom:12px">
+            <strong>SQL Injection impossível</strong> — não há concatenação
+            de strings SQL. Parâmetros são vinculados pelo driver,
+            nunca interpolados.
+          </p>
+          <p>
+            <strong>Controle de acesso no banco</strong> — mesmo
+            um DBA mal-intencionado com acesso direto ao MySQL
+            encontra as mesmas barreiras de perfil nas procedures.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 5 -->
+  <section class="slide left">
+    <div class="tag">Views</div>
+    <h2>7 Views — Leitura sem SQL Cru</h2>
+    <div class="cols cols-2">
+      <div>
+        <table>
+          <tr><th>View</th><th>Uso</th></tr>
+          <tr><td>vw_quartos_disponiveis</td><td>Combo de quartos ao criar reserva</td></tr>
+          <tr><td>vw_ocupacao_atual</td><td>Hospedagens ativas com totais de consumo</td></tr>
+          <tr><td>vw_historico_reservas_cliente</td><td>Histórico por CPF</td></tr>
+          <tr><td>vw_taxa_ocupacao_mensal</td><td>Relatório gerencial — ocupação %</td></tr>
+          <tr><td>vw_top_clientes_assiduos</td><td>Relatório — clientes por diárias</td></tr>
+          <tr><td>vw_top_quartos_reservados</td><td>Relatório — quartos mais reservados</td></tr>
+          <tr><td>vw_faturamento_mensal</td><td>Relatório — receita por mês</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <h3>Padrão de acesso</h3>
+          <pre><span class="cmt">-- Python só emite SELECT * FROM view</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> vw_ocupacao_atual</pre>
+          <br>
+          <pre><span class="cmt">-- A view encapsula o JOIN complexo</span>
+<span class="kw">SELECT</span> h.id_hospedagem,
+       c.nome <span class="kw">AS</span> cliente_nome,
+       q.numero <span class="kw">AS</span> quarto_numero,
+       <span class="fn">COALESCE</span>(<span class="fn">SUM</span>(co.quantidade *
+         co.preco_unitario_momento), <span class="num">0</span>)
+       <span class="kw">AS</span> total_consumo_ate_agora
+<span class="kw">FROM</span> Hospedagem h
+  <span class="kw">JOIN</span> Reserva r   <span class="kw">ON</span> ...
+  <span class="kw">LEFT JOIN</span> Consumo co <span class="kw">ON</span> ...</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 6 -->
+  <section class="slide left">
+    <div class="tag">Stored Procedures</div>
+    <h2>~26 Procedures — Mapa Completo</h2>
+    <div class="cols cols-3" style="font-size:.82rem">
+      <div class="card">
+        <h3>CRUD Padrão</h3>
+        <p>
+          sp_Cliente_Create/Read/Update/Delete<br>
+          sp_Quarto_Create/Read/Update/Delete<br>
+          sp_Funcionario_Create/Read/Update/Delete<br>
+          sp_Reserva_Create/Read/Update/Delete<br>
+          sp_Categoria_Create/Read/Update/Delete<br>
+          sp_ProdutoServico_Create/Read/Update/Delete
+        </p>
+      </div>
+      <div class="card warn">
+        <h3>Lógica de Negócio</h3>
+        <p>
+          sp_Login<br>
+          sp_AssertGerente <em>(helper)</em><br>
+          sp_AtualizarPrecoQuarto<br>
+          sp_AtualizarCategoriaQuarto<br>
+          sp_HistoricoPreco_ReadPorQuarto<br><br>
+          <strong style="color:var(--warn)">Transacionais:</strong><br>
+          sp_RegistrarReserva<br>
+          sp_RealizarCheckIn<br>
+          sp_RealizarCheckOut<br>
+          sp_LancarConsumo
+        </p>
+      </div>
+      <div class="card green">
+        <h3>Relatórios (só Gerente)</h3>
+        <p>
+          sp_Relatorio_TaxaOcupacao<br>
+          sp_Relatorio_TopClientes<br>
+          sp_Relatorio_TopQuartos<br>
+          sp_Relatorio_FaturamentoMensal<br><br>
+          <strong style="color:var(--accent2)">Todas verificam:</strong><br>
+          <code>CALL sp_AssertGerente(id_executor)</code><br>
+          → SIGNAL se Recepcionista
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 7 -->
+  <section class="slide left">
+    <div class="tag">Stored Procedure em Detalhe</div>
+    <h2>sp_RegistrarReserva — Detecção de Sobreposição</h2>
+    <div class="cols cols-2">
+      <pre style="font-size:.75rem"><span class="kw">CREATE PROCEDURE</span> <span class="fn">sp_RegistrarReserva</span>(
+  <span class="kw">IN</span> p_id_cliente <span class="kw">INT</span>, <span class="kw">IN</span> p_id_quarto <span class="kw">INT</span>,
+  <span class="kw">IN</span> p_id_func <span class="kw">INT</span>,
+  <span class="kw">IN</span> p_checkin <span class="kw">DATE</span>, <span class="kw">IN</span> p_checkout <span class="kw">DATE</span>)
+<span class="kw">BEGIN</span>
+  <span class="kw">DECLARE</span> v_conflitos <span class="kw">INT</span>;
+  <span class="kw">DECLARE EXIT HANDLER FOR</span> SQLEXCEPTION
+  <span class="kw">BEGIN</span>
+    <span class="kw">ROLLBACK</span>; <span class="kw">RESIGNAL</span>;
+  <span class="kw">END</span>;
+
+  <span class="kw">START TRANSACTION</span>;
+
+  <span class="kw">SELECT COUNT</span>(*) <span class="kw">INTO</span> v_conflitos
+  <span class="kw">FROM</span> Reserva
+  <span class="kw">WHERE</span> id_quarto = p_id_quarto
+    <span class="kw">AND</span> status <span class="kw">IN</span> (<span class="str">'Confirmada'</span>,<span class="str">'Efetivada'</span>)
+    <span class="kw">AND NOT</span> (
+      data_checkout_prev &lt;= p_checkin
+      <span class="kw">OR</span> data_checkin_prev &gt;= p_checkout);
+
+  <span class="kw">IF</span> v_conflitos &gt; <span class="num">0</span> <span class="kw">THEN</span>
+    <span class="kw">SIGNAL SQLSTATE</span> <span class="str">'45000'</span>
+      <span class="kw">SET MESSAGE_TEXT</span> = <span class="str">'Periodo sobreposto'</span>;
+  <span class="kw">END IF</span>;
+
+  <span class="kw">INSERT INTO</span> Reserva (...) <span class="kw">VALUES</span> (...);
+  <span class="kw">COMMIT</span>;
+<span class="kw">END</span></pre>
+      <div>
+        <div class="card accent" style="margin-bottom:14px">
+          <h3>Padrão Transacional</h3>
+          <p><code style="color:var(--danger)">DECLARE EXIT HANDLER FOR SQLEXCEPTION</code><br>
+             garante ROLLBACK automático em qualquer erro —<br>
+             o banco nunca fica em estado parcial.</p>
+        </div>
+        <div class="card warn" style="margin-bottom:14px">
+          <h3>Detecção de Sobreposição</h3>
+          <p>A condição <code style="color:var(--warn)">NOT (checkout_prev ≤ checkin_new OR checkin_prev ≥ checkout_new)</code>
+             detecta qualquer tipo de sobreposição de período no mesmo quarto.</p>
+        </div>
+        <div class="card green">
+          <h3>RESIGNAL</h3>
+          <p>O erro é relançado para o Python via RESIGNAL —
+             a mensagem do SIGNAL chega como <code>RuntimeError</code>
+             e é exibida ao usuário sem expor detalhes internos.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 8 -->
+  <section class="slide left">
+    <div class="tag">Stored Procedures — Fluxo de Hospedagem</div>
+    <h2>CheckIn · CheckOut · Consumo</h2>
+    <div class="cols cols-3" style="font-size:.82rem">
+      <div class="card accent">
+        <h3>sp_RealizarCheckIn</h3>
+        <pre style="font-size:.72rem"><span class="kw">START TRANSACTION</span>;
+<span class="cmt">-- valida reserva Confirmada</span>
+<span class="cmt">-- valida quarto Disponivel</span>
+<span class="kw">UPDATE</span> Reserva
+  <span class="kw">SET</span> status=<span class="str">'Efetivada'</span>;
+<span class="kw">UPDATE</span> Quarto
+  <span class="kw">SET</span> status=<span class="str">'Ocupado'</span>;
+<span class="kw">INSERT INTO</span> Hospedagem (
+  preco_diaria_aplicado
+    = Quarto.preco_praticado
+  <span class="cmt">-- snapshot do preço atual</span>
+);
+<span class="kw">COMMIT</span>;</pre>
+        <p style="margin-top:10px">O preço é <strong>congelado</strong> no momento do check-in — reajustes futuros não afetam estadias em curso.</p>
+      </div>
+      <div class="card warn">
+        <h3>sp_RealizarCheckOut</h3>
+        <pre style="font-size:.72rem"><span class="kw">START TRANSACTION</span>;
+<span class="cmt">-- valida status = 'Ativa'</span>
+<span class="cmt">-- calcula valor total</span>
+n_dias * preco_diaria_aplicado
++ <span class="fn">SUM</span>(qtd * preco_unitario_momento)
+
+<span class="kw">UPDATE</span> Hospedagem
+  <span class="kw">SET</span> valor_total_diarias,
+      data_checkout_real,
+      status=<span class="str">'Finalizada'</span>;
+<span class="kw">UPDATE</span> Quarto
+  <span class="kw">SET</span> status=<span class="str">'Limpeza'</span>;
+<span class="kw">COMMIT</span>;</pre>
+        <p style="margin-top:10px">Usa <code>preco_diaria_aplicado</code> (snapshot) — faturamento histórico imutável.</p>
+      </div>
+      <div class="card green">
+        <h3>sp_LancarConsumo</h3>
+        <pre style="font-size:.72rem"><span class="kw">START TRANSACTION</span>;
+<span class="cmt">-- valida hospedagem Ativa</span>
+
+<span class="kw">SELECT</span> preco_praticado
+  <span class="kw">INTO</span> v_preco
+<span class="kw">FROM</span> Produto_Servico
+<span class="kw">WHERE</span> id = p_id_ps;
+
+<span class="kw">INSERT INTO</span> Consumo (
+  preco_unitario_momento
+    = v_preco  <span class="cmt">-- snapshot</span>
+);
+<span class="kw">COMMIT</span>;</pre>
+        <p style="margin-top:10px">Preço do produto congelado no momento do consumo — mesma invariante de snapshot.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 9 -->
+  <section class="slide left">
+    <div class="tag">Transactions</div>
+    <h2>4 SPs Transacionais + 2 Transações Puras</h2>
+    <div class="cols cols-2">
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <h3>Padrão em todas as SPs transacionais</h3>
+          <pre style="font-size:.76rem"><span class="kw">DECLARE EXIT HANDLER FOR</span> SQLEXCEPTION
+<span class="kw">BEGIN</span>
+  <span class="kw">ROLLBACK</span>;  <span class="cmt">-- desfaz tudo se algo falhar</span>
+  <span class="kw">RESIGNAL</span>; <span class="cmt">-- repassa o erro para o app</span>
+<span class="kw">END</span>;
+
+<span class="kw">START TRANSACTION</span>;
+  <span class="cmt">-- validações de negócio</span>
+  <span class="cmt">-- operações DML</span>
+<span class="kw">COMMIT</span>;</pre>
+        </div>
+        <div class="card green">
+          <h3>Seed Transacional (05_seed_data.sql)</h3>
+          <pre style="font-size:.76rem"><span class="kw">START TRANSACTION</span>;
+  <span class="kw">INSERT INTO</span> Categoria_Quarto ...;
+  <span class="kw">SAVEPOINT</span> sp_categorias;
+
+  <span class="kw">INSERT INTO</span> Quarto ...;
+  <span class="kw">SAVEPOINT</span> sp_quartos;
+
+  <span class="cmt">-- ... clientes, funcionários,</span>
+  <span class="cmt">--     produtos, reservas, etc.</span>
+<span class="kw">COMMIT</span>;</pre>
+        </div>
+      </div>
+      <div>
+        <div class="card warn" style="margin-bottom:14px">
+          <h3>Demo de Transações (99_demo_transacoes.sql)</h3>
+          <p style="margin-bottom:12px"><strong>Cenário 1 — COMMIT normal</strong><br>
+             Atualiza preço → trigger cria histórico → COMMIT confirma.</p>
+          <p style="margin-bottom:12px"><strong>Cenário 2 — ROLLBACK explícito</strong><br>
+             Atualiza preço → cria histórico → ROLLBACK → tudo desfeito, preço original restaurado.</p>
+          <p><strong>Cenário 3 — SAVEPOINT parcial</strong><br>
+             Atualiza dois quartos → ROLLBACK TO SAVEPOINT → só o segundo é desfeito.</p>
+        </div>
+        <div class="card accent">
+          <h3>Garantia de Atomicidade</h3>
+          <p>Um check-in envolve 3 tabelas (Reserva, Quarto, Hospedagem). Sem transação, uma falha entre os UPDATEs deixaria o banco inconsistente. O handler garante que ou tudo ocorre, ou nada ocorre.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 10 -->
+  <section class="slide left">
+    <div class="tag">Triggers</div>
+    <h2>2 Triggers — Invariante do Histórico de Preço</h2>
+    <div class="cols cols-2">
+      <div>
+        <div class="card accent" style="margin-bottom:14px">
+          <h3>trg_preco_inicial_quarto — AFTER INSERT</h3>
+          <pre style="font-size:.76rem"><span class="kw">CREATE TRIGGER</span> trg_preco_inicial_quarto
+<span class="kw">AFTER INSERT ON</span> Quarto
+<span class="kw">FOR EACH ROW</span>
+<span class="kw">BEGIN</span>
+  <span class="kw">INSERT INTO</span> Historico_Preco (
+    id_quarto, preco_praticado,
+    data_inicio_vigencia,
+    data_fim_vigencia)
+  <span class="kw">VALUES</span> (
+    NEW.id_quarto,
+    NEW.preco_praticado,
+    <span class="fn">NOW</span>(), <span class="kw">NULL</span>);  <span class="cmt">-- NULL = vigente</span>
+<span class="kw">END</span></pre>
+          <p style="margin-top:10px">Todo quarto nasce com seu primeiro registro histórico de preço.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card warn" style="margin-bottom:14px">
+          <h3>trg_atualiza_preco_quarto — AFTER UPDATE</h3>
+          <pre style="font-size:.76rem"><span class="kw">CREATE TRIGGER</span> trg_atualiza_preco_quarto
+<span class="kw">AFTER UPDATE ON</span> Quarto
+<span class="kw">FOR EACH ROW</span>
+<span class="kw">BEGIN</span>
+  <span class="kw">IF</span> OLD.preco_praticado &lt;&gt;
+     NEW.preco_praticado <span class="kw">THEN</span>
+
+    <span class="cmt">-- fecha vigência anterior</span>
+    <span class="kw">UPDATE</span> Historico_Preco
+    <span class="kw">SET</span> data_fim_vigencia = <span class="fn">NOW</span>()
+    <span class="kw">WHERE</span> id_quarto = NEW.id_quarto
+      <span class="kw">AND</span> data_fim_vigencia <span class="kw">IS NULL</span>;
+
+    <span class="cmt">-- abre nova vigência</span>
+    <span class="kw">INSERT INTO</span> Historico_Preco ...;
+  <span class="kw">END IF</span>;
+<span class="kw">END</span></pre>
+        </div>
+        <div class="card green">
+          <h3>Por que trigger e não procedure?</h3>
+          <p>A invariante <em>"todo UPDATE de preço gera linha em Historico_Preco"</em> é mantida pelo SGBD — protege mesmo alterações diretas via Workbench, scripts de migração ou qualquer outro cliente.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 11 -->
+  <section class="slide left">
+    <div class="tag">Segurança</div>
+    <h2>Senhas · SHA2 · Controle de Acesso</h2>
+    <div class="cols cols-2">
+      <div>
+        <div class="card danger" style="margin-bottom:14px">
+          <h3>SHA2(senha, 256) no banco</h3>
+          <pre style="font-size:.76rem"><span class="cmt">-- sp_Login: senha nunca retorna</span>
+<span class="kw">SELECT</span> id_funcionario, nome, perfil
+<span class="kw">FROM</span> Funcionario
+<span class="kw">WHERE</span> login = p_login
+  <span class="kw">AND</span> senha_hash = <span class="fn">SHA2</span>(p_senha, <span class="num">256</span>);
+
+<span class="cmt">-- sp_Funcionario_Create</span>
+<span class="kw">INSERT INTO</span> Funcionario (senha_hash)
+<span class="kw">VALUES</span> (<span class="fn">SHA2</span>(p_senha, <span class="num">256</span>));</pre>
+          <p style="margin-top:10px">A senha em texto puro <strong>nunca trafega de volta</strong> pela rede. O hash é computado no servidor MySQL.</p>
+        </div>
+        <div class="card accent">
+          <h3>sp_AssertGerente — Controle em 2 Camadas</h3>
+          <pre style="font-size:.76rem"><span class="cmt">-- Camada 1: banco (toda SP sensível chama este helper)</span>
+<span class="kw">IF</span> v_perfil &lt;&gt; <span class="str">'Gerente'</span> <span class="kw">THEN</span>
+  <span class="kw">SIGNAL SQLSTATE</span> <span class="str">'45000'</span>
+    <span class="kw">SET MESSAGE_TEXT</span> =
+      <span class="str">'Acesso negado: restrito a Gerentes'</span>;
+<span class="kw">END IF</span>;</pre>
+        </div>
+      </div>
+      <div>
+        <div class="card green">
+          <h3>RBAC em 2 Camadas</h3>
+          <table style="font-size:.8rem">
+            <tr><th>Ação</th><th>Camada BD</th><th>Camada UI</th></tr>
+            <tr><td>Relatórios gerenciais</td><td>SIGNAL</td><td>Aba oculta</td></tr>
+            <tr><td>CRUD de Funcionários</td><td>SIGNAL</td><td>Aba oculta</td></tr>
+            <tr><td>Alterar preço de quarto</td><td>SIGNAL</td><td>Botão desabilitado</td></tr>
+            <tr><td>Alterar categoria de quarto</td><td>SIGNAL</td><td>Combobox desabilitado</td></tr>
+          </table>
+          <br>
+          <p>A UI é apenas conveniência — o banco recusa a operação independentemente de como for chamado.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 12 -->
+  <section class="slide left">
+    <div class="tag">Segurança — SQL Injection</div>
+    <h2>Por que SQL Injection é impossível aqui</h2>
+    <div class="cols cols-2">
+      <div>
+        <div class="card danger" style="margin-bottom:14px">
+          <h3>❌ Vulnerabilidade clássica</h3>
+          <pre style="font-size:.76rem"><span class="cmt"># Python vulnerável (NÃO é o que fazemos)</span>
+sql = <span class="str">f"SELECT * FROM Funcionario
+       WHERE login = '</span>{login}<span class="str">'"</span>
+cursor.execute(sql)
+
+<span class="cmt"># Ataque: login = ' OR '1'='1</span>
+<span class="cmt"># Resultado: retorna todos os usuários</span></pre>
+        </div>
+        <div class="card accent">
+          <h3>✅ Nossa abordagem</h3>
+          <pre style="font-size:.76rem"><span class="cmt"># Python — parâmetros vinculados pelo driver</span>
+cursor.<span class="fn">callproc</span>(<span class="str">"sp_Login"</span>,
+               (login, senha))
+
+<span class="cmt"># O driver envia parâmetros separados</span>
+<span class="cmt"># do SQL — jamais concatenados.</span>
+<span class="cmt"># Não há SQL para injetar.</span></pre>
+        </div>
+      </div>
+      <div>
+        <div class="card green">
+          <h3>3 Camadas de Proteção</h3>
+          <p style="margin-bottom:10px">
+            <strong>1. Sem SQL dinâmico</strong><br>
+            <span style="color:var(--muted)">A app só chama procedures por nome fixo. Não existe string SQL montada em runtime.</span>
+          </p>
+          <p style="margin-bottom:10px">
+            <strong>2. Parâmetros vinculados</strong><br>
+            <span style="color:var(--muted)">O mysql-connector usa placeholders internos. O MySQL recebe o valor como dado, não como código SQL.</span>
+          </p>
+          <p>
+            <strong>3. Permissões mínimas</strong><br>
+            <span style="color:var(--muted)">O usuário MySQL da app tem apenas EXECUTE em procedures e SELECT em views. Mesmo com credenciais expostas, não consegue fazer DROP, INSERT direto, ou SELECT em tabelas sensíveis.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 13 -->
+  <section class="slide">
+    <div class="tag">Demonstração</div>
+    <h2>Demo ao Vivo</h2>
+    <div class="cols cols-3" style="margin-top:16px">
+      <div class="card accent" style="text-align:center;padding:28px">
+        <div style="font-size:2.5rem;margin-bottom:12px">🔐</div>
+        <h3>Login e Perfis</h3>
+        <p>Login como Gerente vs. Recepcionista — abas e botões diferentes</p>
+      </div>
+      <div class="card warn" style="text-align:center;padding:28px">
+        <div style="font-size:2.5rem;margin-bottom:12px">📅</div>
+        <h3>Fluxo de Hospedagem</h3>
+        <p>Criar reserva → check-in → lançar consumo → check-out com valor total</p>
+      </div>
+      <div class="card green" style="text-align:center;padding:28px">
+        <div style="font-size:2.5rem;margin-bottom:12px">🔒</div>
+        <h3>Bloqueios de Acesso</h3>
+        <p>Recepcionista tentando alterar preço → SIGNAL do banco chega na UI</p>
+      </div>
+    </div>
+    <br>
+    <div class="cols cols-2" style="max-width:700px">
+      <div class="card" style="text-align:center;padding:22px">
+        <div style="font-size:2rem;margin-bottom:8px">💰</div>
+        <h3>Trigger em Ação</h3>
+        <p>Alterar preço de quarto → ver histórico criado automaticamente</p>
+      </div>
+      <div class="card" style="text-align:center;padding:22px">
+        <div style="font-size:2rem;margin-bottom:8px">📊</div>
+        <h3>Relatórios Gerenciais</h3>
+        <p>Faturamento mensal, top clientes, taxa de ocupação</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 14 (era 15) -->
+  <section class="slide">
+    <div class="tag">Números do Projeto</div>
+    <div class="cols cols-3" style="margin-top:8px;text-align:center">
+      <div class="card accent" style="padding:32px">
+        <div class="hero">9</div>
+        <p class="big">tabelas em 3FN</p>
+      </div>
+      <div class="card green" style="padding:32px">
+        <div class="hero">7</div>
+        <p class="big">views</p>
+      </div>
+      <div class="card warn" style="padding:32px">
+        <div class="hero">26</div>
+        <p class="big">stored procedures</p>
+      </div>
+    </div>
+    <div class="cols cols-3" style="margin-top:16px;text-align:center">
+      <div class="card" style="padding:28px">
+        <div class="hero" style="font-size:3.5rem">4</div>
+        <p class="big">SPs transacionais</p>
+      </div>
+      <div class="card" style="padding:28px">
+        <div class="hero" style="font-size:3.5rem">2</div>
+        <p class="big">triggers</p>
+      </div>
+      <div class="card" style="padding:28px">
+        <div class="hero" style="font-size:3.5rem">0</div>
+        <p class="big">linhas de SQL cru<br>no app Python</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ SLIDE 16 -->
+  <section class="slide">
+    <div class="tag">Obrigado</div>
+    <h1>Perguntas?</h1>
+    <div class="rule"></div>
+    <p class="sub">Hotel do Mosquito — LABDB</p>
+    <br>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center;margin-top:8px">
+      <span class="badge blue">MySQL 8 · InnoDB</span>
+      <span class="badge green">Python 3 · Tkinter</span>
+      <span class="badge orange">Docker</span>
+      <span class="badge blue">mysql-connector-python 8.4</span>
+      <span class="badge green">SHA2-256</span>
+      <span class="badge orange">RBAC 2 camadas</span>
+    </div>
+  </section>
+
+</div><!-- /deck -->
+
+<div id="controls">
+  <button id="btn-prev">← Anterior</button>
+  <span id="counter"></span>
+  <button id="btn-next">Próximo →</button>
+</div>
+
+<script>
+  const slides  = Array.from(document.querySelectorAll('.slide'));
+  const counter = document.getElementById('counter');
+  const progress= document.getElementById('progress');
+  const slideNum= document.getElementById('slide-num');
+  let current = 0;
+
+  function go(n) {
+    const prev = current;
+    current = Math.max(0, Math.min(slides.length - 1, n));
+    if (prev === current) return;
+    slides[prev].classList.add('leaving');
+    slides[prev].classList.remove('active');
+    setTimeout(() => slides[prev].classList.remove('leaving'), 400);
+    slides[current].classList.add('active');
+    update();
+  }
+
+  function update() {
+    counter.textContent  = `${current + 1} / ${slides.length}`;
+    slideNum.textContent = `${current + 1} / ${slides.length}`;
+    progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+  }
+
+  document.getElementById('btn-prev').addEventListener('click', () => go(current - 1));
+  document.getElementById('btn-next').addEventListener('click', () => go(current + 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown'  || e.key === ' ')  go(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                      go(current - 1);
+    if (e.key === 'Home') go(0);
+    if (e.key === 'End')  go(slides.length - 1);
+  });
+
+  update();
+</script>
+</body>
+</html>
